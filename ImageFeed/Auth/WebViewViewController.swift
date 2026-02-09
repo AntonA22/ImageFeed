@@ -81,6 +81,7 @@ final class WebViewViewController: UIViewController {
     
     private func loadAuthView() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
+            print("WebViewViewController: URLComponents init failed for authorize URL")
             return
         }
         
@@ -92,8 +93,9 @@ final class WebViewViewController: UIViewController {
         ]
         
         guard let url = urlComponents.url else {
-            return
-        }
+           print("WebViewViewController: urlComponents.url is nil. components=\(urlComponents)")
+           return
+       }
         
         let request = URLRequest(url: url)
         webView.load(request)
