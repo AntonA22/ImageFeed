@@ -49,9 +49,11 @@ extension SplashViewController {
 
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
-        vc.dismiss(animated: true) { [weak self] in
-            guard let self else { return }
-            self.performSegue(withIdentifier: self.showTabBarControllerSegueIdentifier, sender: nil)
-        }
+//        vc.dismiss(animated: true) { [weak self] in
+//            guard let self else { return }
+//            self.performSegue(withIdentifier: self.showTabBarControllerSegueIdentifier, sender: nil)
+//        }
+        vc.navigationController?.dismiss(animated: true)
+        self.performSegue(withIdentifier: self.showTabBarControllerSegueIdentifier, sender: nil)
     }
 }
