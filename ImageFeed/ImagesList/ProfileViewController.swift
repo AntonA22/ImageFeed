@@ -57,6 +57,25 @@ final class ProfileViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "#1A1B22")
 
+        guard let token = OAuth2TokenStorage.shared.token, !token.isEmpty else {
+           print("Нет токена для загрузки профиля")
+           return
+        }
+        
+        ProfileService.shared.fetchProfile(token) { [weak self] result in
+            guard let self else { return }
+
+            switch result {
+            case .success(let profile):
+                self.nameLabel.text = profile.name
+                self.usernameLabel.text = profile.loginName
+                self.statusLabel.text = profile.bio
+
+            case .failure(let error):
+                print("fetchProfile error:", error)
+            }
+        }
+        
         setupLayout()
     }
 
