@@ -40,22 +40,26 @@ final class WebViewViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil
-        )
+//        webView.addObserver(
+//            self,
+//            forKeyPath: #keyPath(WKWebView.estimatedProgress),
+//            options: .new,
+//            context: nil
+//        )
     }
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
 
-        webView.removeObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            context: nil
-        )
+//        webView.removeObserver(
+//            self,
+//            forKeyPath: #keyPath(WKWebView.estimatedProgress),
+//            context: nil
+//        )
+    }
+    
+    deinit {
+        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
     }
     
     override func observeValue(
@@ -81,6 +85,7 @@ final class WebViewViewController: UIViewController {
     
     private func loadAuthView() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
+            print("WebViewViewController: URLComponents init failed for authorize URL")
             return
         }
         
@@ -92,8 +97,9 @@ final class WebViewViewController: UIViewController {
         ]
         
         guard let url = urlComponents.url else {
-            return
-        }
+           print("WebViewViewController: urlComponents.url is nil. components=\(urlComponents)")
+           return
+       }
         
         let request = URLRequest(url: url)
         webView.load(request)
@@ -101,30 +107,63 @@ final class WebViewViewController: UIViewController {
 }
 
 extension WebViewViewController: WKNavigationDelegate {
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
+//    func webView(
+//        _ webView: WKWebView,
+//        decidePolicyFor navigationAction: WKNavigationAction,
+//        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+//    ) {
+//        if let code = code(from: navigationAction) {
+//            print("✅ GOT CODE:", code)
+//            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
+//            decisionHandler(.cancel)
+//        } else {
+//            decisionHandler(.allow)
+//        }
+//    }
+//
+//    private func code(from navigationAction: WKNavigationAction) -> String? {
+//        if
+//            let url = navigationAction.request.url,
+//            let urlComponents = URLComponents(string: url.absoluteString),
+//            urlComponents.path == "/oauth/authorize/native",
+//            let items = urlComponents.queryItems,
+//            let codeItem = items.first(where: { $0.name == "code" })
+//        {
+//            return codeItem.value
+//        } else {
+//            return nil
+//        }
+//    }
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+
         if let code = code(from: navigationAction) {
+            decisionHandler(.cancel)  // сначала cancel
             delegate?.webViewViewController(self, didAuthenticateWithCode: code)
-            decisionHandler(.cancel)
-        } else {
-            decisionHandler(.allow)
+            return
         }
+        decisionHandler(.allow)
     }
 
     private func code(from navigationAction: WKNavigationAction) -> String? {
-        if
+        guard
             let url = navigationAction.request.url,
-            let urlComponents = URLComponents(string: url.absoluteString),
-            urlComponents.path == "/oauth/authorize/native",
-            let items = urlComponents.queryItems,
-            let codeItem = items.first(where: { $0.name == "code" })
-        {
-            return codeItem.value
-        } else {
-            return nil
-        }
+            let comps = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            let code = comps.queryItems?.first(where: { $0.name == "code" })?.value
+        else { return nil }
+
+        return code
     }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+           print("❌ didFailProvisionalNavigation:", error)
+           if let nsError = error as NSError? {
+               print("domain:", nsError.domain, "code:", nsError.code, "info:", nsError.userInfo)
+           }
+       }
+
+       func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+           print("❌ didFail navigation:", error)
+       }
+
 }

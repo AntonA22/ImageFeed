@@ -27,10 +27,8 @@ final class SplashViewController: UIViewController {
 
 extension SplashViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Проверим, что переходим на авторизацию
         if segue.identifier == showAuthenticationScreenSegueIdentifier {
 
-            // Доберёмся до первого контроллера в навигации
             guard
                 let navigationController = segue.destination as? UINavigationController,
                 let viewController = navigationController.viewControllers.first as? AuthViewController
@@ -39,7 +37,6 @@ extension SplashViewController {
                 return
             }
 
-            // Установим делегатом контроллера наш SplashViewController
             viewController.delegate = self
         } else {
             super.prepare(for: segue, sender: sender)
@@ -49,7 +46,9 @@ extension SplashViewController {
 
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
-        vc.dismiss(animated: true)
-        performSegue(withIdentifier: "ShowTabBarController", sender: nil)
+        vc.navigationController?.dismiss(animated: true) { [weak self] in
+            guard let self else { return }
+            self.performSegue(withIdentifier: self.showTabBarControllerSegueIdentifier, sender: nil)
+        }
     }
 }
