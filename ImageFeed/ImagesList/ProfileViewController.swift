@@ -6,8 +6,60 @@
 //
 
 import UIKit
+import Kingfisher
 
 final class ProfileViewController: UIViewController {
+    
+    // Перегружаем конструктор
+    override init(nibName: String?, bundle: Bundle?) {
+         super.init(nibName: nibName, bundle: bundle)
+         addObserver()
+     }
+    
+    // Определяем конструктор, необходимый при декодировании
+    // класса из Storyboard
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        addObserver()
+    }
+    
+    // Определяем деструктор
+    deinit {
+        removeObserver()
+    }
+    
+    private func addObserver() {
+        NotificationCenter.default.addObserver(                 // 1
+            self,                                               // 2
+            selector: #selector(updateAvatar(notification:)),   // 3
+            name: ProfileImageService.didChangeNotification,    // 4
+            object: nil)                                        // 5
+    }
+    
+    private func removeObserver() {
+         NotificationCenter.default.removeObserver(              // 6
+             self,                                               // 7
+             name: ProfileImageService.didChangeNotification,    // 8
+             object: nil)                                        // 9
+     }
+    
+    @objc                                                       // 10
+    private func updateAvatar(notification: Notification) {     // 11
+        guard
+            isViewLoaded,                                       // 12
+            let userInfo = notification.userInfo,               // 13
+            let profileImageURL = userInfo["URL"] as? String,   // 14
+            let url = URL(string: profileImageURL)              // 15
+        else { return }
+        
+        profileImageView.kf.setImage(
+            with: url,
+            placeholder: UIImage(named: "PfofileImage")
+        )
+    }
+    
+    private let profileService = ProfileService.shared
 
     private let profileImageView: UIImageView = {
         let imageView = UIImageView()
@@ -62,23 +114,42 @@ final class ProfileViewController: UIViewController {
            return
         }
         
-        ProfileService.shared.fetchProfile(token) { [weak self] result in
-            guard let self else { return }
+        if let avatarURL = ProfileImageService.shared.avatarURL,
+           let url = URL(string: avatarURL) {
 
-            switch result {
-            case .success(let profile):
-                self.nameLabel.text = profile.name
-                self.usernameLabel.text = profile.loginName
-                self.statusLabel.text = profile.bio
-
-            case .failure(let error):
-                print("fetchProfile error:", error)
-            }
+            profileImageView.kf.setImage(
+                with: url,
+                placeholder: UIImage(named: "PfofileImage")
+            )
         }
         
+//        ProfileService.shared.fetchProfile(token) { [weak self] result in
+//            guard let self else { return }
+//
+//            switch result {
+//            case .success(let profile):
+//                self.nameLabel.text = profile.name
+//                self.usernameLabel.text = profile.loginName
+//                self.statusLabel.text = profile.bio
+//
+//            case .failure(let error):
+//                print("fetchProfile error:", error)
+//            }
+//        }
+        updateProfileDetails()
         setupLayout()
     }
 
+    private func updateProfileDetails() {
+        guard let profile = profileService.profile else {
+            return
+        }
+
+        nameLabel.text = profile.name
+        usernameLabel.text = profile.loginName
+        statusLabel.text = profile.bio
+    }
+    
     private func setupLayout() {
         view.addSubview(profileImageView)
         view.addSubview(nameLabel)

@@ -43,6 +43,12 @@ final class ProfileService {
     
     static let shared = ProfileService()
     
+    private(set) var profile: Profile?
+    
+    private var task: URLSessionTask?
+    
+    private init() {}
+    
     private func makeRequest(token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/me") else {
             return nil
@@ -61,42 +67,32 @@ final class ProfileService {
     }
     
     func fetchProfile(_ token: String, completion: @escaping (Result<Profile, Error>) -> Void) {
-        guard let request = makeRequest(token: token) else {
-            completion(.failure(URLError(.badURL)))
+        if task != nil {
+            completion(.failure(ProfileServiceError.requestInProgress))
             return
         }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            
-            if let error = error {
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
-                return
+
+        guard let request = makeRequest(token: token) else {
+            completion(.failure(ProfileServiceError.invalidRequest))
+            return
+        }
+  
+        task = URLSession.shared.objectTask(for: request) { [weak self] (result: Result<ProfileResult, Error>) in
+            guard let self else { return }
+            self.task = nil
+
+            switch result {
+            case .success(let profileResult):
+                let profile = Profile(result: profileResult)
+                self.profile = profile
+                completion(.success(profile))
+
+            case .failure(let error):
+                logError("ProfileService.fetchProfile", "error=\(error.localizedDescription), tokenIsEmpty=\(token.isEmpty)")
+                completion(.failure(error))
             }
-            
-            guard let data = data else {
-                DispatchQueue.main.async {
-                    completion(.failure(URLError(.badServerResponse)))
-                }
-                return
-            }
-            
-            do {
-                let result = try JSONDecoder().decode(ProfileResult.self, from: data)
-                let profile = Profile(result: result)
-                
-                DispatchQueue.main.async {
-                    completion(.success(profile))
-                }
-                
-            } catch {
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
-            }
-        }.resume()
-            
+        }
+        task?.resume()
     }
     
 }

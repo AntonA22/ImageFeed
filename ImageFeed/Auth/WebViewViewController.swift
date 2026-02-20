@@ -23,18 +23,23 @@ final class WebViewViewController: UIViewController {
 
     weak var delegate: WebViewViewControllerDelegate?
     
+    private var estimatedProgressObservation: NSKeyValueObservation?
+   
     override func viewDidLoad() {
         super.viewDidLoad()
 
         webView.navigationDelegate = self
+        progressView.progress = 0
+        progressView.isHidden = false
+
+        estimatedProgressObservation = webView.observe(
+            \.estimatedProgress,
+            options: [.new]
+        ) { [weak self] _, _ in
+            self?.updateProgress()
+        }
 
         loadAuthView()
-        
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {

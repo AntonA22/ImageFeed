@@ -45,29 +45,43 @@ final class AuthViewController: UIViewController {
         navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
         navigationItem.backBarButtonItem?.tintColor = UIColor(resource: .ypBlack)
     }
+    
+    private func showAuthErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+
+        let action = UIAlertAction(title: "Ок", style: .default)
+        alert.addAction(action)
+
+        present(alert, animated: true)
+    }
 }
 
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        vc.dismiss(animated: true) // Закрыли WebView
         
         //ProgressHUD.animate()
-        UIBlockingProgressHUD.show()
+//        UIBlockingProgressHUD.show()
 
         oauth2Service.fetchOAuthToken(code) { [weak self] result in
-            
-            //ProgressHUD.dismiss()
-            UIBlockingProgressHUD.dismiss()
-            
             guard let self else { return }
 
-            switch result {
-            case .success:
-                DispatchQueue.main.async {
-                    self.delegate?.didAuthenticate(self)
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let token):
+                    print("✅ TOKEN:", token)
+                    vc.dismiss(animated: true) { [weak self] in
+                        guard let self else { return }
+                        self.delegate?.didAuthenticate(self)
+                    }
+
+                case .failure(let error):
+                    print("❌ OAuth token error:", error)
+                    self.showAuthErrorAlert()
                 }
-            case .failure(let error):
-                print("OAuth token error:", error)
             }
         }
     }
@@ -76,4 +90,3 @@ extension AuthViewController: WebViewViewControllerDelegate {
         dismiss(animated: true)
     }
 }
-
