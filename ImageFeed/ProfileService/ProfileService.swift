@@ -68,11 +68,19 @@ final class ProfileService {
     
     func fetchProfile(_ token: String, completion: @escaping (Result<Profile, Error>) -> Void) {
         if task != nil {
+            logError(
+                "ProfileService.fetchProfile(_:)",
+                "ProfileServiceError - requestInProgress, tokenIsEmpty=\(token.isEmpty)"
+            )
             completion(.failure(ProfileServiceError.requestInProgress))
             return
         }
 
         guard let request = makeRequest(token: token) else {
+            logError(
+                "ProfileService.fetchProfile(_:)",
+                "ProfileServiceError - invalidRequest, tokenIsEmpty=\(token.isEmpty)"
+            )
             completion(.failure(ProfileServiceError.invalidRequest))
             return
         }
@@ -88,7 +96,10 @@ final class ProfileService {
                 completion(.success(profile))
 
             case .failure(let error):
-                logError("ProfileService.fetchProfile", "error=\(error.localizedDescription), tokenIsEmpty=\(token.isEmpty)")
+                logError(
+                    "ProfileService.fetchProfile(_:)",
+                    "NetworkError - error=\(error.localizedDescription), tokenIsEmpty=\(token.isEmpty)"
+                )
                 completion(.failure(error))
             }
         }

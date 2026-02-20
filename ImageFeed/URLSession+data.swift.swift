@@ -34,14 +34,23 @@ extension URLSession {
                 if 200 ..< 300 ~= statusCode {
                     fulfillCompletionOnTheMainThread(.success(data))
                 } else {
-                    logError("URLSession.data", "NetworkError.httpStatusCode=\(statusCode), url=\(request.url?.absoluteString ?? "nil")")
+                    logError(
+                        "URLSession.data(for:)",
+                        "NetworkError - statusCode=\(statusCode), url=\(request.url?.absoluteString ?? "nil")"
+                    )
                     fulfillCompletionOnTheMainThread(.failure(NetworkError.httpStatusCode(statusCode)))
                 }
             } else if let error {
-                logError("URLSession.data", "NetworkError.urlRequestError=\(error.localizedDescription), url=\(request.url?.absoluteString ?? "nil")")
+                logError(
+                    "URLSession.data(for:)",
+                    "NetworkError - requestError=\(error.localizedDescription), url=\(request.url?.absoluteString ?? "nil")"
+                )
                 fulfillCompletionOnTheMainThread(.failure(NetworkError.urlRequestError(error)))
             } else {
-                logError("URLSession.data", "NetworkError.urlSessionError, url=\(request.url?.absoluteString ?? "nil")")
+                logError(
+                    "URLSession.data(for:)",
+                    "NetworkError - urlSessionError, url=\(request.url?.absoluteString ?? "nil")"
+                )
                 fulfillCompletionOnTheMainThread(.failure(NetworkError.urlSessionError))
             }
         }
@@ -68,16 +77,16 @@ extension URLSession {
                 } catch {
                     let body = String(data: data, encoding: .utf8) ?? ""
                     logError(
-                        "URLSession.objectTask",
-                        "decodingError=\(error.localizedDescription), type=\(T.self), url=\(request.url?.absoluteString ?? "nil"), data=\(body)"
+                        "URLSession.objectTask(for:)",
+                        "NetworkError - decodingError=\(error.localizedDescription), type=\(T.self), url=\(request.url?.absoluteString ?? "nil"), data=\(body)"
                     )
                     completion(.failure(NetworkError.decodingError(error)))
                 }
 
             case .failure(let error):
                 logError(
-                    "URLSession.objectTask",
-                    "upstreamError=\(error.localizedDescription), type=\(T.self), url=\(request.url?.absoluteString ?? "nil")"
+                    "URLSession.objectTask(for:)",
+                    "NetworkError - upstreamError=\(error.localizedDescription), type=\(T.self), url=\(request.url?.absoluteString ?? "nil")"
                 )
                 completion(.failure(error))
             }
@@ -88,5 +97,5 @@ extension URLSession {
 }
 
 func logError(_ tag: String, _ message: String) {
-    print("[\(tag)]: ERROR \(message)")
+    print("[\(tag)]: \(message)")
 }

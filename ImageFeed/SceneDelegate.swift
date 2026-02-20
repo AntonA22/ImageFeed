@@ -21,7 +21,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow(windowScene: windowScene)
         window?.rootViewController = SplashViewController()
         window?.makeKeyAndVisible()
-        OAuth2TokenStorage.shared.clean()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -54,4 +53,3 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
 }
-

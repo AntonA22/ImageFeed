@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import ProgressHUD
 
 protocol AuthViewControllerDelegate: AnyObject {
     func didAuthenticate(_ vc: AuthViewController)
@@ -48,7 +47,7 @@ final class AuthViewController: UIViewController {
     
     private func showAuthErrorAlert() {
         let alert = UIAlertController(
-            title: "Что-то пошло не так",
+            title: "Что-то пошло не так(",
             message: "Не удалось войти в систему",
             preferredStyle: .alert
         )
@@ -62,25 +61,27 @@ final class AuthViewController: UIViewController {
 
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        
-        //ProgressHUD.animate()
-//        UIBlockingProgressHUD.show()
+        vc.dismiss(animated: true) { [weak self] in
+            UIBlockingProgressHUD.show()
 
-        oauth2Service.fetchOAuthToken(code) { [weak self] result in
-            guard let self else { return }
+            self?.oauth2Service.fetchOAuthToken(code) { [weak self] result in
+                DispatchQueue.main.async {
+                    UIBlockingProgressHUD.dismiss()
 
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let token):
-                    print("✅ TOKEN:", token)
-                    vc.dismiss(animated: true) { [weak self] in
-                        guard let self else { return }
+                    guard let self else { return }
+
+                    switch result {
+                    case .success(let token):
+                        print("✅ TOKEN:", token)
                         self.delegate?.didAuthenticate(self)
-                    }
 
-                case .failure(let error):
-                    print("❌ OAuth token error:", error)
-                    self.showAuthErrorAlert()
+                    case .failure(let error):
+                        logError(
+                            "AuthViewController.webViewViewController(_:didAuthenticateWithCode:)",
+                            "AuthFlowError - error=\(error.localizedDescription), code=\(code)"
+                        )
+                        self.showAuthErrorAlert()
+                    }
                 }
             }
         }

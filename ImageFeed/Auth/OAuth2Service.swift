@@ -44,6 +44,10 @@ final class OAuth2Service {
 
         // 1) Если уже есть запрос с тем же code — второй не запускаем
         if task != nil, lastCode == code {
+            logError(
+                "OAuth2Service.fetchOAuthToken(_:)",
+                "AuthServiceError - requestInProgress, code=\(code)"
+            )
             completion(.failure(AuthServiceError.requestInProgress))
             return
         }
@@ -56,6 +60,10 @@ final class OAuth2Service {
         lastCode = code
 
         guard let request = makeOAuthTokenRequest(code: code) else {
+            logError(
+                "OAuth2Service.fetchOAuthToken(_:)",
+                "AuthServiceError - invalidRequest, code=\(code)"
+            )
             completion(.failure(AuthServiceError.invalidRequest))
             lastCode = nil
             task = nil
@@ -80,9 +88,16 @@ final class OAuth2Service {
             case .failure(let error):
                 // Если запрос отменён — отдаём понятную ошибку
                 if (error as NSError).code == NSURLErrorCancelled {
+                    logError(
+                        "OAuth2Service.fetchOAuthToken(_:)",
+                        "AuthServiceError - cancelled, code=\(code)"
+                    )
                     completion(.failure(AuthServiceError.cancelled))
                 } else {
-                    logError("OAuth2Service.fetchOAuthToken", "error=\(error.localizedDescription), code=\(code)")
+                    logError(
+                        "OAuth2Service.fetchOAuthToken(_:)",
+                        "NetworkError - error=\(error.localizedDescription), code=\(code)"
+                    )
                     completion(.failure(error))
                 }
             }
