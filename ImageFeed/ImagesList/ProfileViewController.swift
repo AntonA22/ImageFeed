@@ -7,6 +7,7 @@
 
 import UIKit
 import Kingfisher
+import WebKit
 
 final class ProfileViewController: UIViewController {
     
@@ -55,15 +56,16 @@ final class ProfileViewController: UIViewController {
         
         profileImageView.kf.setImage(
             with: url,
-            placeholder: UIImage(named: "PfofileImage")
+            placeholder: UIImage(resource: .profile)
         )
     }
     
     private let profileService = ProfileService.shared
+    private let tokenStorage = OAuth2TokenStorage.shared
 
     private let profileImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "PfofileImage")
+        imageView.image = UIImage(resource: .profile)
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -108,8 +110,9 @@ final class ProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "#1A1B22")
+        logoutButton.addTarget(self, action: #selector(didTapLogoutButton), for: .touchUpInside)
 
-        guard let token = OAuth2TokenStorage.shared.token, !token.isEmpty else {
+        guard let token = tokenStorage.token, !token.isEmpty else {
            print("Нет токена для загрузки профиля")
            return
         }
@@ -119,23 +122,10 @@ final class ProfileViewController: UIViewController {
 
             profileImageView.kf.setImage(
                 with: url,
-                placeholder: UIImage(named: "PfofileImage")
+                placeholder: UIImage(resource: .profile)
             )
         }
         
-//        ProfileService.shared.fetchProfile(token) { [weak self] result in
-//            guard let self else { return }
-//
-//            switch result {
-//            case .success(let profile):
-//                self.nameLabel.text = profile.name
-//                self.usernameLabel.text = profile.loginName
-//                self.statusLabel.text = profile.bio
-//
-//            case .failure(let error):
-//                print("fetchProfile error:", error)
-//            }
-//        }
         updateProfileDetails()
         setupLayout()
     }
@@ -184,6 +174,38 @@ final class ProfileViewController: UIViewController {
             logoutButton.widthAnchor.constraint(equalToConstant: 24),
             logoutButton.heightAnchor.constraint(equalToConstant: 24)
         ])
+    }
+
+    @objc
+    private func didTapLogoutButton() {
+        tokenStorage.clean()
+        profileService.clean()
+        ProfileImageService.shared.clean()
+        clearWebViewData { [weak self] in
+            self?.switchToSplashViewController()
+        }
+    }
+
+    private func clearWebViewData(completion: @escaping () -> Void) {
+        let dataStore = WKWebsiteDataStore.default()
+        let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+        dataStore.fetchDataRecords(ofTypes: dataTypes) { records in
+            dataStore.removeData(ofTypes: dataTypes, for: records, completionHandler: completion)
+        }
+    }
+
+    private func switchToSplashViewController() {
+        guard
+            let windowScene = view.window?.windowScene,
+            let sceneDelegate = windowScene.delegate as? SceneDelegate,
+            let window = sceneDelegate.window
+        else {
+            assertionFailure("Cannot get window")
+            return
+        }
+
+        window.rootViewController = SplashViewController()
+        window.makeKeyAndVisible()
     }
 }
 

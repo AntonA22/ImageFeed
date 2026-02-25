@@ -10,12 +10,6 @@ struct ProfileImage: Codable {
     let small: String
     let medium: String
     let large: String
-
-    private enum CodingKeys: String, CodingKey {
-        case small
-        case medium
-        case large
-    }
 }
 
 struct UserResult: Codable {
@@ -36,7 +30,7 @@ final class ProfileImageService {
 
     private var task: URLSessionTask?
     
-    static let didChangeNotification = Notification.Name(rawValue: "ProfileImageProviderDidChange")
+    static let didChangeNotification = Notification.Name("ProfileImageProviderDidChange")
 
     // Метод для получения аватарки по имени пользователя
     func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
@@ -91,8 +85,14 @@ final class ProfileImageService {
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = HTTPMethod.get.rawValue
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         return request
+    }
+
+    func clean() {
+        task?.cancel()
+        task = nil
+        avatarURL = nil
     }
 }

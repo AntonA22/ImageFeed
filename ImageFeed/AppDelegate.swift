@@ -25,7 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
        options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
        let sceneConfiguration = UISceneConfiguration(          // 1
-           name: "Default Configuration",
+           name: nil,
            sessionRole: connectingSceneSession.role
        )
        sceneConfiguration.storyboard = nil
@@ -38,6 +38,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
-
-
 }

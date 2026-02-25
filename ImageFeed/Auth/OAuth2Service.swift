@@ -43,7 +43,7 @@ final class OAuth2Service {
         assert(Thread.isMainThread)
 
         // 1) Если уже есть запрос с тем же code — второй не запускаем
-        if task != nil, lastCode == code {
+        guard task == nil || lastCode != code else {
             logError(
                 "OAuth2Service.fetchOAuthToken(_:)",
                 "AuthServiceError - requestInProgress, code=\(code)"
@@ -71,10 +71,7 @@ final class OAuth2Service {
         }
 
         task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
-            guard let self else { return }
-
-            // Если за время запроса пришёл новый code — игнорим результат старого запроса
-            guard self.lastCode == code else { return }
+            guard let self, self.lastCode == code else { return }
 
             self.task = nil
             self.lastCode = nil
@@ -125,33 +122,5 @@ final class OAuth2Service {
         var request = URLRequest(url: authTokenUrl)
         request.httpMethod = HTTPMethod.post.rawValue // можно оставить "POST", но так аккуратнее
         return request
-    }
-}
-
-
-import Foundation
-import SwiftKeychainWrapper
-
-final class OAuth2TokenStorage {
-    static let shared = OAuth2TokenStorage()
-    private init() {}
-
-    private enum Keys {
-        static let token = "oauth_token"
-    }
-
-    var token: String? {
-        get { KeychainWrapper.standard.string(forKey: Keys.token) }
-        set {
-            if let token = newValue {
-                KeychainWrapper.standard.set(token, forKey: Keys.token)
-            } else {
-                KeychainWrapper.standard.removeObject(forKey: Keys.token)
-            }
-        }
-    }
-
-    func clean() {
-        KeychainWrapper.standard.removeObject(forKey: Keys.token)
     }
 }

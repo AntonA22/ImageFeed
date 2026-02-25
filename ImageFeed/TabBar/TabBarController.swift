@@ -7,8 +7,6 @@
 
 import UIKit
  
-import UIKit
- 
 final class TabBarController: UITabBarController {
     
     override func awakeFromNib() {
@@ -33,7 +31,7 @@ final class TabBarController: UITabBarController {
             selectedImage: nil
         )
         
-        self.viewControllers = [
+        viewControllers = [
             imagesListViewController,
             profileViewController
         ]

@@ -11,6 +11,7 @@ final class SplashViewController: UIViewController {
     
     private let storage = OAuth2TokenStorage.shared
     private let profileService = ProfileService.shared
+    private var isFetchingProfile = false
     
     private let showAuthenticationScreenSegueIdentifier = "ShowAuthenticationScreen"
     private let showTabBarControllerSegueIdentifier = "ShowTabBarController"
@@ -18,11 +19,7 @@ final class SplashViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        if let token = storage.token, !token.isEmpty {
-            fetchProfile(token: token)
-        } else {
-            showAuth()
-        }
+        fetchProfileIfNeeded()
     }
     
     private func showAuth() {
@@ -66,25 +63,29 @@ final class SplashViewController: UIViewController {
 
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
-        // Закрываем экран авторизации
-        vc.dismiss(animated: true) { [weak self] in
-            guard let self else { return }
+        // Закрываем экран авторизации; профиль загрузится в viewDidAppear
+        vc.dismiss(animated: true)
+    }
 
-            // Забираем токен из хранилища
-            guard let token = self.storage.token else { return }
+    private func fetchProfileIfNeeded() {
+        guard !isFetchingProfile else { return }
 
-            // И только потом грузим профиль (а переход — внутри success)
-            self.fetchProfile(token: token)
+        guard let token = storage.token, !token.isEmpty else {
+            showAuth()
+            return
         }
+
+        fetchProfile(token: token)
     }
     
     private func fetchProfile(token: String) {
+        isFetchingProfile = true
         UIBlockingProgressHUD.show()
         
         profileService.fetchProfile(token) { [weak self] result in
+            guard let self else { return }
+            self.isFetchingProfile = false
             UIBlockingProgressHUD.dismiss()
-
-            guard let self = self else { return }
 
             switch result {
             case .success(let profile):
