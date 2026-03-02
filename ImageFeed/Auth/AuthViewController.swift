@@ -44,25 +44,44 @@ final class AuthViewController: UIViewController {
         navigationItem.backBarButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
         navigationItem.backBarButtonItem?.tintColor = UIColor(resource: .ypBlack)
     }
+    
+    private func showAuthErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+
+        let action = UIAlertAction(title: "Ок", style: .default)
+        alert.addAction(action)
+
+        present(alert, animated: true)
+    }
 }
 
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
+        vc.dismiss(animated: true) { [weak self] in
+            UIBlockingProgressHUD.show()
 
-        oauth2Service.fetchOAuthToken(code: code) { [weak self] result in
-            guard let self else { return }
+            self?.oauth2Service.fetchOAuthToken(code) { [weak self] result in
+                DispatchQueue.main.async {
+                    UIBlockingProgressHUD.dismiss()
 
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let token):
-                    print("✅ TOKEN:", token)
-                    vc.dismiss(animated: true) { [weak self] in
-                        guard let self else { return }
+                    guard let self else { return }
+
+                    switch result {
+                    case .success(let token):
+                        print("✅ TOKEN:", token)
                         self.delegate?.didAuthenticate(self)
-                    }
 
-                case .failure(let error):
-                    print("❌ OAuth token error:", error)
+                    case .failure(let error):
+                        logError(
+                            "AuthViewController.webViewViewController(_:didAuthenticateWithCode:)",
+                            "AuthFlowError - error=\(error.localizedDescription), code=\(code)"
+                        )
+                        self.showAuthErrorAlert()
+                    }
                 }
             }
         }
@@ -72,4 +91,3 @@ extension AuthViewController: WebViewViewControllerDelegate {
         dismiss(animated: true)
     }
 }
-

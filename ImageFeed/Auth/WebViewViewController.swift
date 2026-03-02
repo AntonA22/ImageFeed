@@ -23,56 +23,28 @@ final class WebViewViewController: UIViewController {
 
     weak var delegate: WebViewViewControllerDelegate?
     
+    private var estimatedProgressObservation: NSKeyValueObservation?
+    private var handledAuthorizationCode: String?
+   
     override func viewDidLoad() {
         super.viewDidLoad()
 
         webView.navigationDelegate = self
+        progressView.progress = 0
+        progressView.isHidden = false
+
+        estimatedProgressObservation = webView.observe(
+            \.estimatedProgress,
+            options: [.new]
+        ) { [weak self] _, _ in
+            self?.updateProgress()
+        }
 
         loadAuthView()
-        
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil)
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-
-//        webView.addObserver(
-//            self,
-//            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-//            options: .new,
-//            context: nil
-//        )
-    }
-    
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-
-//        webView.removeObserver(
-//            self,
-//            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-//            context: nil
-//        )
     }
     
     deinit {
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
-    }
-    
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey : Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        if keyPath == #keyPath(WKWebView.estimatedProgress) {
-            updateProgress()
-        } else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-        }
+        estimatedProgressObservation?.invalidate()
     }
     
     private func updateProgress() {
@@ -107,38 +79,16 @@ final class WebViewViewController: UIViewController {
 }
 
 extension WebViewViewController: WKNavigationDelegate {
-//    func webView(
-//        _ webView: WKWebView,
-//        decidePolicyFor navigationAction: WKNavigationAction,
-//        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-//    ) {
-//        if let code = code(from: navigationAction) {
-//            print("✅ GOT CODE:", code)
-//            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
-//            decisionHandler(.cancel)
-//        } else {
-//            decisionHandler(.allow)
-//        }
-//    }
-//
-//    private func code(from navigationAction: WKNavigationAction) -> String? {
-//        if
-//            let url = navigationAction.request.url,
-//            let urlComponents = URLComponents(string: url.absoluteString),
-//            urlComponents.path == "/oauth/authorize/native",
-//            let items = urlComponents.queryItems,
-//            let codeItem = items.first(where: { $0.name == "code" })
-//        {
-//            return codeItem.value
-//        } else {
-//            return nil
-//        }
-//    }
     func webView(_ webView: WKWebView,
                  decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
 
         if let code = code(from: navigationAction) {
+            if handledAuthorizationCode == code {
+                decisionHandler(.cancel)
+                return
+            }
+            handledAuthorizationCode = code
             decisionHandler(.cancel)  // сначала cancel
             delegate?.webViewViewController(self, didAuthenticateWithCode: code)
             return
@@ -149,6 +99,8 @@ extension WebViewViewController: WKNavigationDelegate {
     private func code(from navigationAction: WKNavigationAction) -> String? {
         guard
             let url = navigationAction.request.url,
+            url.host == "unsplash.com",
+            url.path == "/oauth/authorize/native",
             let comps = URLComponents(url: url, resolvingAgainstBaseURL: false),
             let code = comps.queryItems?.first(where: { $0.name == "code" })?.value
         else { return nil }
@@ -156,14 +108,16 @@ extension WebViewViewController: WKNavigationDelegate {
         return code
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-           print("❌ didFailProvisionalNavigation:", error)
-           if let nsError = error as NSError? {
-               print("domain:", nsError.domain, "code:", nsError.code, "info:", nsError.userInfo)
-           }
-       }
+        let nsError = error as NSError
+        // Expected for OAuth redirect: we cancel navigation after extracting code.
+        if nsError.domain == "WebKitErrorDomain", nsError.code == 102 {
+            return
+        }
+        print("❌ didFailProvisionalNavigation:", error)
+    }
 
-       func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-           print("❌ didFail navigation:", error)
-       }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        print("❌ didFail navigation:", error)
+    }
 
 }
