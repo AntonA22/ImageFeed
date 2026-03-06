@@ -7,7 +7,6 @@
 
 import UIKit
 import Kingfisher
-import WebKit
 
 final class ProfileViewController: UIViewController {
     
@@ -62,6 +61,7 @@ final class ProfileViewController: UIViewController {
     
     private let profileService = ProfileService.shared
     private let tokenStorage = OAuth2TokenStorage.shared
+    private let profileLogoutService = ProfileLogoutService.shared
 
     private let profileImageView: UIImageView = {
         let imageView = UIImageView()
@@ -178,19 +178,8 @@ final class ProfileViewController: UIViewController {
 
     @objc
     private func didTapLogoutButton() {
-        tokenStorage.clean()
-        profileService.clean()
-        ProfileImageService.shared.clean()
-        clearWebViewData { [weak self] in
+        profileLogoutService.logout { [weak self] in
             self?.switchToSplashViewController()
-        }
-    }
-
-    private func clearWebViewData(completion: @escaping () -> Void) {
-        let dataStore = WKWebsiteDataStore.default()
-        let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
-        dataStore.fetchDataRecords(ofTypes: dataTypes) { records in
-            dataStore.removeData(ofTypes: dataTypes, for: records, completionHandler: completion)
         }
     }
 
