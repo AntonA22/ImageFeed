@@ -98,4 +98,7 @@ iOSInjectionProject/
 /*.gcno
 **/xcshareddata/WorkspaceSettings.xcsettings
 
+# Claude Code
+CLAUDE.md
+
 # End of https://www.toptal.com/developers/gitignore/api/swift,xcode
