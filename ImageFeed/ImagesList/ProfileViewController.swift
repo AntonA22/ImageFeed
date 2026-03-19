@@ -104,6 +104,7 @@ final class ProfileViewController: UIViewController {
         button.setImage(UIImage(named: "Exit"), for: .normal)
         button.tintColor = .systemRed
         button.translatesAutoresizingMaskIntoConstraints = false
+        button.accessibilityIdentifier = "logout button"
         return button
     }()
 
@@ -178,9 +179,14 @@ final class ProfileViewController: UIViewController {
 
     @objc
     private func didTapLogoutButton() {
-        profileLogoutService.logout { [weak self] in
-            self?.switchToSplashViewController()
-        }
+        let alert = UIAlertController(title: "Bye bye!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Yes", style: .destructive) { [weak self] _ in
+            self?.profileLogoutService.logout {
+                self?.switchToSplashViewController()
+            }
+        })
+        alert.addAction(UIAlertAction(title: "No", style: .cancel))
+        present(alert, animated: true)
     }
 
     private func switchToSplashViewController() {
