@@ -10,7 +10,12 @@ import Foundation
 import Kingfisher
 
 final class ImagesListCell: UITableViewCell {
-    
+
+    private enum Constants {
+        static let likeOnImage = "like_on"
+        static let likeOffImage = "like_off"
+    }
+
     @IBOutlet  var dateLabel: UILabel!
     @IBOutlet  var likeButton: UIButton!
     @IBOutlet  var cellImageView: UIImageView!
@@ -31,7 +36,7 @@ final class ImagesListCell: UITableViewCell {
     }
     
     func setIsLiked(_ isLiked: Bool) {
-        let imageName = isLiked ? "like_on" : "like_off"
+        let imageName = isLiked ? Constants.likeOnImage : Constants.likeOffImage
         likeButton.setImage(UIImage(named: imageName), for: .normal)
     }
 

@@ -19,7 +19,7 @@ final class ImagesListViewController: UIViewController {
     private var likeInProgressPhotoIDs: Set<String> = []
     private let placeholderImage = UIImage(named: "Placeholder") ?? UIImage(systemName: "photo")
 
-    @IBOutlet private var tableView: UITableView!
+    @IBOutlet private weak var tableView: UITableView!
     
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -142,6 +142,7 @@ extension ImagesListViewController: UITableViewDataSource {
         }
 
         cell.delegate = self
+        cell.selectionStyle = .none
 
         configCell(for: cell, with: indexPath)
         return cell
