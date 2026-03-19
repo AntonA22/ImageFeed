@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
 
@@ -6,6 +7,12 @@ final class SingleImageViewController: UIViewController {
         didSet {
             guard isViewLoaded else { return }
             updateImage()
+        }
+    }
+    var fullImageURL: URL? {
+        didSet {
+            guard isViewLoaded else { return }
+            loadFullSizeImage()
         }
     }
 
@@ -32,6 +39,7 @@ final class SingleImageViewController: UIViewController {
         scrollView.maximumZoomScale = 1.25
 
         updateImage()
+        loadFullSizeImage()
     }
 
     private func updateImage() {
@@ -42,6 +50,38 @@ final class SingleImageViewController: UIViewController {
         scrollView.contentSize = image.size
         
         rescaleAndCenterImageInScrollView(image: image)
+    }
+
+    private func loadFullSizeImage() {
+        guard let fullImageURL else { return }
+
+        UIBlockingProgressHUD.show()
+        imageView.kf.setImage(with: fullImageURL) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            guard let self else { return }
+
+            switch result {
+            case .success(let imageResult):
+                self.image = imageResult.image
+            case .failure:
+                self.showError()
+            }
+        }
+    }
+
+    private func showError() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так. Попробовать ещё раз?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Не надо", style: .cancel))
+        alert.addAction(
+            UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+                self?.loadFullSizeImage()
+            }
+        )
+        present(alert, animated: true)
     }
     
     private func rescaleAndCenterImageInScrollView(image: UIImage) {
