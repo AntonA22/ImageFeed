@@ -8,101 +8,64 @@
 @testable import ImageFeed
 import XCTest
 
-// MARK: - Spies
-
-final class ImagesListPresenterSpy: ImagesListPresenterProtocol {
-    var viewDidLoadCalled = false
-    var fetchPhotosNextPageCalled = false
-    var changeLikeCalled = false
-    var changeLikeIndex: Int?
-    var view: ImagesListViewControllerProtocol?
-
-    var photos: [Photo] = []
-
-    func viewDidLoad() {
-        viewDidLoadCalled = true
-    }
-
-    func fetchPhotosNextPage() {
-        fetchPhotosNextPageCalled = true
-    }
-
-    func changeLike(at index: Int, completion: @escaping (Result<Void, Error>) -> Void) {
-        changeLikeCalled = true
-        changeLikeIndex = index
-        completion(.success(()))
-    }
-}
-
-final class ImagesListViewControllerSpy: ImagesListViewControllerProtocol {
-    var presenter: ImagesListPresenterProtocol?
-    var updateTableViewAnimatedCalled = false
-    var showLikeErrorAlertCalled = false
-    var receivedOldCount: Int?
-    var receivedNewCount: Int?
-
-    func updateTableViewAnimated(from oldCount: Int, to newCount: Int) {
-        updateTableViewAnimatedCalled = true
-        receivedOldCount = oldCount
-        receivedNewCount = newCount
-    }
-
-    func showLikeErrorAlert() {
-        showLikeErrorAlertCalled = true
-    }
-}
-
 // MARK: - Tests
 
 final class ImagesListTests: XCTestCase {
 
-    func testViewControllerCallsPresenterViewDidLoad() {
-        // given
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let viewController = storyboard.instantiateViewController(
-            withIdentifier: "ImagesListViewController"
-        ) as! ImagesListViewController
-        let presenter = ImagesListPresenterSpy()
+    // MARK: - Properties
+
+    private var presenter: ImagesListPresenterMock!
+    private var viewController: ImagesListViewControllerMock!
+
+    // MARK: - Setup
+
+    override func setUp() {
+        super.setUp()
+        presenter = ImagesListPresenterMock()
+        viewController = ImagesListViewControllerMock()
         viewController.presenter = presenter
         presenter.view = viewController
+    }
 
-        // when
-        _ = viewController.view
+    // MARK: - Tests
 
-        // then
-        XCTAssertTrue(presenter.viewDidLoadCalled)
+    func testViewControllerCallsPresenterViewDidLoad() {
+        // Given
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(
+            withIdentifier: "ImagesListViewController"
+        ) as! ImagesListViewController
+        let presenterMock = ImagesListPresenterMock()
+        vc.presenter = presenterMock
+        presenterMock.view = vc
+
+        // When
+        _ = vc.view
+
+        // Then
+        XCTAssertTrue(presenterMock.viewDidLoadCalled)
     }
 
     func testPresenterCallsFetchPhotosNextPage() {
-        // given
-        let presenter = ImagesListPresenterSpy()
-
-        // when
+        // When
         presenter.fetchPhotosNextPage()
 
-        // then
+        // Then
         XCTAssertTrue(presenter.fetchPhotosNextPageCalled)
     }
 
     func testPresenterCallsUpdateTableViewAnimated() {
-        // given
-        let viewController = ImagesListViewControllerSpy()
-        let presenter = ImagesListPresenterSpy()
-        viewController.presenter = presenter
-        presenter.view = viewController
-
-        // when
+        // When
         viewController.updateTableViewAnimated(from: 0, to: 5)
 
-        // then
+        // Then
         XCTAssertTrue(viewController.updateTableViewAnimatedCalled)
         XCTAssertEqual(viewController.receivedOldCount, 0)
         XCTAssertEqual(viewController.receivedNewCount, 5)
     }
 
     func testPresenterChangeLike() {
-        // given
-        let presenter = ImagesListPresenterSpy()
+        // Given
         presenter.photos = [
             Photo(
                 id: "1",
@@ -115,10 +78,10 @@ final class ImagesListTests: XCTestCase {
             )
         ]
 
-        // when
+        // When
         let expectation = expectation(description: "changeLike")
         presenter.changeLike(at: 0) { result in
-            // then
+            // Then
             switch result {
             case .success:
                 break

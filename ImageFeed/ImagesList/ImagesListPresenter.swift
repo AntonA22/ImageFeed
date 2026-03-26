@@ -7,21 +7,12 @@
 
 import Foundation
 
-protocol ImagesListPresenterProtocol: AnyObject {
-    var view: ImagesListViewControllerProtocol? { get set }
-    var photos: [Photo] { get }
-    func viewDidLoad()
-    func fetchPhotosNextPage()
-    func changeLike(at index: Int, completion: @escaping (Result<Void, Error>) -> Void)
-}
-
-protocol ImagesListViewControllerProtocol: AnyObject {
-    var presenter: ImagesListPresenterProtocol? { get set }
-    func updateTableViewAnimated(from oldCount: Int, to newCount: Int)
-    func showLikeErrorAlert()
-}
+// MARK: - ImagesListPresenter
 
 final class ImagesListPresenter: ImagesListPresenterProtocol {
+
+    // MARK: - Properties
+
     weak var view: ImagesListViewControllerProtocol?
 
     private let imagesListService: ImagesListService
@@ -30,9 +21,13 @@ final class ImagesListPresenter: ImagesListPresenterProtocol {
         imagesListService.photos
     }
 
+    // MARK: - Init
+
     init(imagesListService: ImagesListService = .shared) {
         self.imagesListService = imagesListService
     }
+
+    // MARK: - Public Methods
 
     func viewDidLoad() {
         NotificationCenter.default.addObserver(

@@ -8,71 +8,32 @@
 @testable import ImageFeed
 import XCTest
 
-// MARK: - Spies
-
-final class ProfilePresenterSpy: ProfilePresenterProtocol {
-    var viewDidLoadCalled = false
-    var didTapLogoutCalled = false
-    var view: ProfileViewControllerProtocol?
-
-    func viewDidLoad() {
-        viewDidLoadCalled = true
-    }
-
-    func didTapLogout() {
-        didTapLogoutCalled = true
-    }
-}
-
-final class ProfileViewControllerSpy: ProfileViewControllerProtocol {
-    var presenter: ProfilePresenterProtocol?
-    var updateProfileDetailsCalled = false
-    var updateAvatarCalled = false
-    var showLogoutAlertCalled = false
-    var receivedProfile: Profile?
-    var receivedAvatarURL: URL?
-
-    func updateProfileDetails(profile: Profile) {
-        updateProfileDetailsCalled = true
-        receivedProfile = profile
-    }
-
-    func updateAvatar(url: URL) {
-        updateAvatarCalled = true
-        receivedAvatarURL = url
-    }
-
-    func showLogoutAlert() {
-        showLogoutAlertCalled = true
-    }
-}
-
 // MARK: - Tests
 
 final class ProfileTests: XCTestCase {
 
     func testViewControllerCallsPresenterViewDidLoad() {
-        // given
+        // Given
         let viewController = ProfileViewController()
-        let presenter = ProfilePresenterSpy()
+        let presenter = ProfilePresenterMock()
         viewController.presenter = presenter
         presenter.view = viewController
 
-        // when
+        // When
         _ = viewController.view
 
-        // then
+        // Then
         XCTAssertTrue(presenter.viewDidLoadCalled)
     }
 
     func testPresenterCallsUpdateProfileDetails() {
-        // given
-        let viewController = ProfileViewControllerSpy()
+        // Given
+        let viewController = ProfileViewControllerMock()
         let presenter = ProfilePresenter()
         viewController.presenter = presenter
         presenter.view = viewController
 
-        // when
+        // When
         let profileResult = ProfileResult(
             username: "testuser",
             firstName: "Test",
@@ -82,7 +43,7 @@ final class ProfileTests: XCTestCase {
         let profile = Profile(result: profileResult)
         viewController.updateProfileDetails(profile: profile)
 
-        // then
+        // Then
         XCTAssertTrue(viewController.updateProfileDetailsCalled)
         XCTAssertEqual(viewController.receivedProfile?.name, "Test User")
         XCTAssertEqual(viewController.receivedProfile?.loginName, "@testuser")
@@ -90,32 +51,32 @@ final class ProfileTests: XCTestCase {
     }
 
     func testPresenterCallsUpdateAvatar() {
-        // given
-        let viewController = ProfileViewControllerSpy()
+        // Given
+        let viewController = ProfileViewControllerMock()
         let presenter = ProfilePresenter()
         viewController.presenter = presenter
         presenter.view = viewController
         let url = URL(string: "https://example.com/avatar.png")!
 
-        // when
+        // When
         viewController.updateAvatar(url: url)
 
-        // then
+        // Then
         XCTAssertTrue(viewController.updateAvatarCalled)
         XCTAssertEqual(viewController.receivedAvatarURL, url)
     }
 
     func testPresenterDidTapLogoutCallsShowLogoutAlert() {
-        // given
-        let viewController = ProfileViewControllerSpy()
+        // Given
+        let viewController = ProfileViewControllerMock()
         let presenter = ProfilePresenter()
         viewController.presenter = presenter
         presenter.view = viewController
 
-        // when
+        // When
         presenter.didTapLogout()
 
-        // then
+        // Then
         XCTAssertTrue(viewController.showLogoutAlertCalled)
     }
 }

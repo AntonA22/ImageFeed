@@ -16,9 +16,13 @@ final class ImageFeedUITests: XCTestCase {
     }
 
     func testAuth() throws {
+        // Given
+        let webView = app.webViews["UnsplashWebView"]
+
+        // When
         app.buttons["Authenticate"].tap()
 
-        let webView = app.webViews["UnsplashWebView"]
+        // Then
         XCTAssertTrue(webView.waitForExistence(timeout: 5))
 
         let loginTextField = webView.descendants(matching: .textField).element
@@ -43,10 +47,12 @@ final class ImageFeedUITests: XCTestCase {
     }
 
     func testFeed() throws {
+        // Given
         let tablesQuery = app.tables
-
         let cell = tablesQuery.children(matching: .cell).element(boundBy: 0)
         XCTAssertTrue(cell.waitForExistence(timeout: 5))
+
+        // When
         cell.swipeUp()
 
         sleep(2)
@@ -62,6 +68,7 @@ final class ImageFeedUITests: XCTestCase {
 
         sleep(2)
 
+        // Then
         let image = app.scrollViews.images.element(boundBy: 0)
         image.pinch(withScale: 3, velocity: 1)
         image.pinch(withScale: 0.5, velocity: -1)
@@ -70,16 +77,19 @@ final class ImageFeedUITests: XCTestCase {
     }
 
     func testProfile() throws {
+        // Given
         sleep(3)
         app.tabBars.buttons.element(boundBy: 1).tap()
 
+        // Then
         XCTAssertTrue(app.staticTexts[""].exists)   // Укажите ваше имя из профиля Unsplash
         XCTAssertTrue(app.staticTexts[""].exists)   // Укажите ваш @username из профиля Unsplash
 
+        // When
         app.buttons["logout button"].tap()
-
         app.alerts["Bye bye!"].scrollViews.otherElements.buttons["Yes"].tap()
 
+        // Then
         let authButton = app.buttons["Authenticate"]
         XCTAssertTrue(authButton.waitForExistence(timeout: 5))
     }
